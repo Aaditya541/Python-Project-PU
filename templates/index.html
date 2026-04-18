@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Voice Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+    <div class="chat-card">
+
+        <div class="header">🤖 AI Assistant</div>
+
+        <div id="chatbox" class="chat-box"></div>
+
+        <div id="typing" class="typing">Bot is typing...</div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type message...">
+            <button onclick="sendMessage()">➤</button>
+            <button onclick="startVoice()">🎤</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+
+// ---------------- MESSAGE UI ----------------
+function addMessage(text, type) {
+    let chatbox = document.getElementById("chatbox");
+
+    let msg = document.createElement("div");
+    msg.className = "msg " + type;
+
+    let avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.innerText = type === "user" ? "👤" : "🤖";
+
+    let bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerText = text;
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+
+    chatbox.appendChild(msg);
+    chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+// ---------------- SEND MESSAGE ----------------
+function sendMessage() {
+    let input = document.getElementById("userInput");
+    let text = input.value;
+
+    if(text.trim() === "") return;
+
+    addMessage(text, "user");
+    input.value = "";
+
+    document.getElementById("typing").style.display = "block";
+
+    fetch("/get", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: "msg=" + text
+    })
+    .then(res => res.json())
+    .then(data => {
+        setTimeout(() => {
+            document.getElementById("typing").style.display = "none";
+            addMessage(data, "bot");
+            speak(data);
+        }, 800);
+    });
+}
+
+// ---------------- ENTER KEY ----------------
+document.getElementById("userInput")
+.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") sendMessage();
+});
+
+// ---------------- VOICE INPUT ----------------
+function startVoice() {
+    let recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-IN";
+
+    recognition.onresult = function(event) {
+        let text = event.results[0][0].transcript;
+        document.getElementById("userInput").value = text;
+        sendMessage();
+    };
+
+    recognition.start();
+}
+
+// ---------------- VOICE OUTPUT ----------------
+function speak(text) {
+    let speech = new SpeechSynthesisUtterance(text);
+    speech.lang = "en-IN";
+    speechSynthesis.speak(speech);
+}
+
+</script>
+
+</body>
+</html>
