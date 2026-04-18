@@ -1,11 +1,16 @@
 from flask import Flask, render_template, request, jsonify
 import sqlite3
-import openai
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+# Load .env
+load_dotenv()
+
+# Get API key
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = Flask(__name__)
-
-# 👉 Tamari API key mukvi
-openai.api_key = "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"
 
 # ---------------- DATABASE ----------------
 def save_chat(user, bot):
@@ -18,13 +23,13 @@ def save_chat(user, bot):
 # ---------------- AI RESPONSE ----------------
 def chatbot_response(msg):
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
             messages=[{"role": "user", "content": msg}]
         )
-        return response.choices[0].message["content"]
-    except:
-        return "Error avyo "
+        return response.choices[0].message.content
+    except Exception as e:
+        return "Error avyo: " + str(e)
 
 # ---------------- ROUTES ----------------
 @app.route('/')
